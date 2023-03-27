@@ -1,6 +1,7 @@
 # AZFinder
 
 Sequencing depth  method to call Copy Number Variants in the Human Y chromosome Palindromes and AZFc based on the procedure in Teitz et al. 2018
+
 Detailed information about this method can be found in Ravasini, Hajiesmaeil et al...
 
 
