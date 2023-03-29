@@ -4,9 +4,14 @@ Sequencing depth  method to call Copy Number Variants in the Human Y chromosome 
 
 Detailed information about this method can be found in Ravasini, Hajiesmaeil et al...
 
+## Software required:
+
+```samtools``` (tested with samtools 1.16)
+
+R package:```tidyverse```
 
 
-## 1) Call depth for each position in the ampliconic and normalization region with samtools (tested with samtools 1.16)
+## 1) Call depth for the ampliconic and normalization region 
 
    **Command:**
 
