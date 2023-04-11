@@ -44,4 +44,20 @@ R package:```tidyverse```
    You will get a ```Normalized_depth_values.txt``` file with the normalized depth value for each amplicon and a ```Copy_number_calls.txt``` file with the corresponding copy number for each amplicon.
    
    
-   
+## 4) EMA method
+
+    Additionaly, you can have the normalized EMA plot fot the AZFc region.
+
+    R package needed: ```tidyverse``` and ```TTR```
+
+    **Important:**
+
+   Again, before running the R script change the part ```Path to amplicon depth file``` with your ```amplicon_depth.txt``` file and ```Path to control region depth file``` with your ```norm_region_depth.txt``` file.
+
+   ```sample_list.txt``` file is the same as above.
+
+   **run R script:**
+
+   ```EMA_ratio.hg19.R``` or ```EMA_ratio.hg38.R``` depending on which reference your genomes are aligned to.
+
+   For each sample you will get a plot in png format.
