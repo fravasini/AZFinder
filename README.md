@@ -1,6 +1,6 @@
 # AZFinder
 
-Sequencing depth  method to call Copy Number Variants in the Human Y chromosome Palindromes and AZFc based on Teitz et al. 2018 procedure.
+Sequencing depth  method to call Copy Number Variants in the Human Y chromosome Palindromes and AZFc based on [Teitz et al. 2018](https://www.sciencedirect.com/science/article/pii/S0002929718302349?via%3Dihub) procedure and [Ravasini et al. 2021](https://www.frontiersin.org/articles/10.3389/fgene.2021.669405/full) EMA ratio method.
 
 Detailed information about this method can be found in Ravasini, Hajiesmaeil et al...
 
@@ -46,11 +46,11 @@ R package:```tidyverse```
    
 ## 4) EMA method
 
-    Additionaly, you can have the normalized EMA plot fot the AZFc region.
+   Additionaly, you can have the normalized EMA plot fot the AZFc region.
 
-    R package needed: ```tidyverse``` and ```TTR```
+   R package needed: ```tidyverse``` and ```TTR```
 
-    **Important:**
+   **Important:**
 
    Again, before running the R script change the part ```Path to amplicon depth file``` with your ```amplicon_depth.txt``` file and ```Path to control region depth file``` with your ```norm_region_depth.txt``` file.
 
