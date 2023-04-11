@@ -21,9 +21,9 @@ R package:```tidyverse```
    
    **Files needed:**
    
-   ```AmpliconPositions_hg19.bed``` is the file with the ampliconic positions in hg19 (if your genome is aligned against hg38 use  ```AmpliconPositions_hg38.bed```)
+   ```AmpliconPositions_hg19.bed``` is the file with the ampliconic positions in hg19 (if your genome is aligned to hg38 use  ```AmpliconPositions_hg38.bed```)
    
-   ```NormalizationRegion_hg19.bed``` is the file with the normalization region positions in hg19 (if your genome is aligned against hg38 use  ```NormalizationRegion_hg38.bed```)
+   ```NormalizationRegion_hg19.bed``` is the file with the normalization region positions in hg19 (if your genome is aligned to hg38 use  ```NormalizationRegion_hg38.bed```)
    
    ```bamlist``` is a file with the list of bamfiles you want to analyze.
    
