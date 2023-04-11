@@ -3,7 +3,7 @@ library(tidyverse)
 
 # read dataframe
 df_amplicon<- read.table("Path to amplicon depth file",header=F)
-df_norm_reg <- read.table("Path to control region depth file", header=F)
+df_norm_reg <- read.table("Path to normalization region depth file", header=F)
 
 # read sample list
 list<-scan("sample_list.txt",character())
