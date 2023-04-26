@@ -61,3 +61,7 @@ R package:```tidyverse```
    ```EMA_ratio.hg19.R``` or ```EMA_ratio.hg38.R``` depending on which reference your genomes are aligned to.
 
    For each sample you will get a plot in png format.
+   
+   
+   
+   For issues, please email me: francesco.ravasini@uniroma1.it
