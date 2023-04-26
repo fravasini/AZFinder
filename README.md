@@ -4,6 +4,8 @@ Sequencing depth  method to call Copy Number Variants in the Human Y chromosome 
 
 Detailed information about this method can be found in Ravasini, Hajiesmaeil et al...
 
+For issues, please email me: francesco.ravasini@uniroma1.it
+
 ## Software required:
 
 ```samtools``` (tested with samtools 1.16)
@@ -64,4 +66,4 @@ R package:```tidyverse```
    
    
    
-   For issues, please email me: francesco.ravasini@uniroma1.it
+  
