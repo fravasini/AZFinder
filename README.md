@@ -37,7 +37,7 @@ R package:```tidyverse```
    
    You need a file called ```sample_list.txt``` with samples names, one per row, in the exact order of the ```bamlist``` file.
    
-   **run R script:**
+   **run R script:** 
 
    ```GetCopyNumberCalls_hg19.R``` or ```GetCopyNumberCalls_hg38.R``` depending on which reference your genomes are aligned to. 
    
