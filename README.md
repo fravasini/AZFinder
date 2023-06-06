@@ -2,7 +2,10 @@
 
 Sequencing depth  method to call Copy Number Variants in the Human Y chromosome Palindromes and AZFc based on [Teitz et al. 2018](https://www.sciencedirect.com/science/article/pii/S0002929718302349?via%3Dihub) procedure and [Ravasini et al. 2021](https://www.frontiersin.org/articles/10.3389/fgene.2021.669405/full) EMA ratio method.
 
-Detailed information about this method can be found in Hajiesmaeil, Ravasini et al...
+**Citation:**
+
+Hajiesmaeil M, Ravasini F, Risi F, Magnarini G, Olivieri A, D’Atanasio E, Galehdari H, Trombetta B, Cruciani F (2023) High incidence of AZF duplications in clan-structured Iranian populations detected through Y chromosome sequencing read depth analysis. doi: [10.21203/rs.3.rs-2966401/v1.](https://www.researchsquare.com/article/rs-2966401/v1)
+
 
 For issues, please email me: francesco.ravasini@uniroma1.it
 
