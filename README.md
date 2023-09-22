@@ -4,7 +4,7 @@ Sequencing depth  method to call Copy Number Variants in the Human Y chromosome 
 
 **Citation:**
 
-Hajiesmaeil M, Ravasini F, Risi F, Magnarini G, Olivieri A, D’Atanasio E, Galehdari H, Trombetta B, Cruciani F (2023) High incidence of AZF duplications in clan-structured Iranian populations detected through Y chromosome sequencing read depth analysis. doi: [10.21203/rs.3.rs-2966401/v1.](https://www.researchsquare.com/article/rs-2966401/v1)
+Hajiesmaeil M, Ravasini F, Risi F, Magnarini G, Olivieri A, D’Atanasio E, Galehdari H, Trombetta B, Cruciani F (2023) High incidence of AZF duplications in clan-structured Iranian populations detected through Y chromosome sequencing read depth analysis. doi: [10.1038/s41598-023-39069-7](https://www.nature.com/articles/s41598-023-39069-7)
 
 
 For issues, please email me: francesco.ravasini@uniroma1.it
