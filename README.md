@@ -11,61 +11,43 @@ For issues, please email me: francesco.ravasini@uniroma1.it
 
 ## Software required:
 
+```python3```
+
 ```samtools``` (tested with samtools 1.16)
 
 R package:```tidyverse```
 
 
-## 1) Call depth for the ampliconic and normalization region 
+## Usage 
 
-   **Command:**
+   **Download and installation:**
 
-   ```samtools depth -ab AmpliconPositions_hg19.bed -f bamlist > amplicon_depth.txt```
+   ```wget https://github.com/fravasini/AZFinder/archive/refs/heads/main.zip```
    
-   ```samtools depth -ab NormalizationRegion_hg19.bed -f bamlist > norm_region_depth.txt```
-   
-   **Files needed:**
-   
-   ```AmpliconPositions_hg19.bed``` is the file with the ampliconic positions in hg19 (if your genome is aligned to hg38 use  ```AmpliconPositions_hg38.bed```)
-   
-   ```NormalizationRegion_hg19.bed``` is the file with the normalization region positions in hg19 (if your genome is aligned to hg38 use  ```NormalizationRegion_hg38.bed```)
-   
-   ```bamlist``` is a file with the list of bamfiles you want to analyze.
-   
-## 2) Run R script
+   ```unzip main.zip```
 
-   **Important:**
+   ```cd AZFinder-main```
    
-   Before running the R script change the part ```Path to amplicon depth file``` with your ```amplicon_depth.txt``` file and ```Path to control region depth file``` with your ```norm_region_depth.txt``` file.
+   **Run:**
    
-   You need a file called ```sample_list.txt``` with samples names, one per row, in the exact order of the ```bamlist``` file.
+   ```python AZFinder.py {reference} --bamlist={your_bamlist}``` 
    
-   **run R script:** 
+   ```{reference}``` is the reference your bam files are aligned to, use ```hg19``` or ```hg38```.
 
-   ```GetCopyNumberCalls_hg19.R``` or ```GetCopyNumberCalls_hg38.R``` depending on which reference your genomes are aligned to. 
-   
-## 3) Results
-
-   You will get a ```Normalized_depth_values.txt``` file with the normalized depth value for each amplicon and a ```Copy_number_calls.txt``` file with the corresponding copy number for each amplicon.
+   ```{your_bamlist}``` is a file with the list of bamfiles you want to analyze, one file per row.
+ 
    
    
-## 4) EMA method
+## Results
 
-   Additionaly, you can have the normalized EMA plot fot the AZFc region.
-
-   R package needed: ```tidyverse``` and ```TTR```
-
-   **Important:**
-
-   Again, before running the R script change the part ```Path to amplicon depth file``` with your ```amplicon_depth.txt``` file and ```Path to control region depth file``` with your ```norm_region_depth.txt``` file.
-
-   ```sample_list.txt``` file is the same as above.
-
-   **run R script:**
-
-   ```EMA_ratio.hg19.R``` or ```EMA_ratio.hg38.R``` depending on which reference your genomes are aligned to.
-
-   For each sample you will get a plot in png format.
+   After running you will get:
+   
+  - ```Normalized_depth_values.txt```: a file with the normalized depth value for each amplicon
+    
+  - ```Copy_number_calls.txt```: a file with the corresponding copy number for each amplicon.
+    
+  - The normalized EMA plots for the AZFc region in png format, for each sample.
+   
    
    
    
