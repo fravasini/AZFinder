@@ -35,6 +35,10 @@ R package:```tidyverse```
    ```{reference}``` is the reference your bam files are aligned to, use ```hg19``` or ```hg38```.
 
    ```{your_bamlist}``` is a file with the list of bamfiles you want to analyze, one file per row.
+
+   Example for running AZFinder on a list of bam files (bamlist.txt) aligned to hg19 reference:
+
+   ```python AZFinder.py hg19 --bamlist=bamlist.txt```
  
    
    
