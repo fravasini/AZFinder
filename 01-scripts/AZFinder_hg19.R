@@ -1,0 +1,437 @@
+args = commandArgs(trailingOnly=TRUE)
+pywd = args[length(args)]
+args = args[-length(args)]
+
+cat("\n ### AZFinder ###")
+cat("\n ##")
+cat("\n #")
+cat(paste0("\n # [",Sys.time(),"] ","Running AZFinder for hg19 reference\n"))
+cat("\n")
+
+
+
+
+error0 = c()
+if(length(grep("bamlist",args)) != 0) {
+  bamlist = strsplit(args[grep("bamlist",args)],"=")[[1]][2]
+} else {
+  error0 = c(error0,"bamlist")
+}
+if(length(error0)>0) {
+  cat("\n\t # ERROR: These required arguments could not be found:\n")
+  cat(paste0("\t\t"),paste0(error0,collapse = ", "))
+  cat("\n")
+  quit()
+}
+
+
+cat("bamlist:", bamlist, "\n")
+cat("\n")
+list<-read.table(bamlist,header=F,col.names = "Samples")
+cat("Samples analyzed:\n")
+print(list)
+cat("\n")
+
+# package needed
+suppressPackageStartupMessages(library(tidyverse))
+
+
+
+## Generate depth files using samtools
+cat("\nObtaining depth values for amplicons...\n")
+commA = paste0("samtools depth -ab ",pywd,"/02-files/AmpliconPositions_hg19.bed -f ",bamlist," > amplicon_depth.txt")
+system(commA, ignore.stderr=T)
+
+cat("\nObtaining depth values for normalization region...\n")
+commB = paste0("samtools depth -ab ",pywd,"/02-files/NormalizationRegion_hg19.bed -f ",bamlist," > Norm_depth.txt")
+system(commB, ignore.stderr=T)
+
+
+cat("\nComputing amplicons copy number...\n")
+# read dataframe
+df_amplicon<- read.table(file=paste0(pywd,"/amplicon_depth.txt"),header=F)
+df_norm_reg <- read.table(file=paste0(pywd,"/Norm_depth.txt"), header=F)
+
+# read sample list
+list0<-scan(bamlist,character(),quiet=T)
+list <- gsub("(.*/\\s*(.*$))", "\\2", list0)
+
+# change column names and modify dataframe
+colnames(df_amplicon) <- c("chr","pos", list)
+colnames(df_norm_reg) <- c("chr","pos", list)
+df_norm_reg <- df_norm_reg%>%select(-chr)
+df_amplicon <- df_amplicon%>%select(-chr)
+
+# define amplicons boundaries
+b <- df_amplicon[c(463235:548379,721201:806663,981677:1067303,1722298:1807969),]
+y <- df_amplicon[c(1067304:1305263,1483906:1722297),]
+r <- df_amplicon[c(870689:896236,896237:921981,1368099:1393732,1393733:1419246),]
+gr <- df_amplicon[c(921982:981676,1807970:1867360),]
+g <- df_amplicon[c(806664:870688,1305264:1368098,1419247:1483905),]
+t <- df_amplicon[c(548380:634906,634907:721200),]
+P4 <- df_amplicon[c(279296:463234),]
+P5 <- df_amplicon[c(116748:279295),]
+P6 <- df_amplicon[c(43638:116747),]
+P7 <- df_amplicon[c(33069:43637),]
+P8 <- df_amplicon[c(1:33068),]
+
+df_ <- list()
+
+#calculating the normalized depth for each sample and each amplicon
+for(i in list) {
+  mean_norm <- mean(df_norm_reg[[i]])
+  mean_b <- mean(b[[i]])
+  mean_y <- mean(y[[i]])
+  mean_r <- mean(r[[i]])
+  mean_gr <- mean(gr[[i]])
+  mean_g <- mean(g[[i]])
+  mean_t <- mean(t[[i]])
+  mean_P4 <- mean(P4[[i]])
+  mean_P5 <- mean(P5[[i]])
+  mean_P6 <- mean(P6[[i]])
+  mean_P7 <- mean(P7[[i]])
+  mean_P8 <- mean(P8[[i]])
+  ratio_b <- as.data.frame(mean_b/mean_norm)
+  colnames(ratio_b) <- c("blue")
+  ratio_y <- as.data.frame(mean_y/mean_norm)
+  colnames(ratio_y) <- c("yellow")
+  ratio_r <- as.data.frame(mean_r/mean_norm)
+  colnames(ratio_r) <- c("red")
+  ratio_gr <- as.data.frame(mean_gr/mean_norm)
+  colnames(ratio_gr) <- c("grey")
+  ratio_g <- as.data.frame(mean_g/mean_norm)
+  colnames(ratio_g) <- c("green")
+  ratio_t <- as.data.frame(mean_t/mean_norm)
+  colnames(ratio_t) <- c("teal")
+  ratio_P4 <- as.data.frame(mean_P4/mean_norm)
+  colnames(ratio_P4) <- c("P4")
+  ratio_P5 <- as.data.frame(mean_P5/mean_norm)
+  colnames(ratio_P5) <- c("P5")
+  ratio_P6 <- as.data.frame(mean_P6/mean_norm)
+  colnames(ratio_P6) <- c("P6")
+  ratio_P7 <- as.data.frame(mean_P7/mean_norm)
+  colnames(ratio_P7) <- c("P7")
+  ratio_P8 <- as.data.frame(mean_P8/mean_norm)
+  colnames(ratio_P8) <- c("P8")
+  df_[[i]] <- cbind(ratio_b,ratio_t,ratio_g,ratio_r,ratio_y,ratio_gr,ratio_P4,ratio_P5,ratio_P6,ratio_P7,ratio_P8)
+  rownames(df_[[i]])<-paste(i)
+}
+
+data_tot <-  do.call(rbind, df_)
+
+# create the normalized depth values file
+write.table(data_tot, file = "Normalized_depth_values.txt", quote=F,sep="\t",col.names = NA)
+
+#assign the correspondent number of amplicon for the standardized depth value
+data_tot <- data_tot %>% 
+  mutate(blue_int = case_when(blue < 0.125 ~ 0
+                              ,blue < 0.375 & blue >= 0.125 ~ 1
+                              ,blue < 0.625 & blue >= 0.375 ~ 2
+                              ,blue < 0.875 & blue >= 0.625 ~ 3
+                              ,blue < 1.125 & blue >= 0.875 ~ 4
+                              ,blue < 1.375 & blue >= 1.125 ~ 5
+                              ,blue < 1.625 & blue >= 1.375 ~ 6
+                              ,blue < 1.875 & blue >= 1.625 ~ 7
+                              ,blue < 2.125 & blue >= 1.875 ~ 8
+                              ,blue < 2.375 & blue >= 2.125 ~ 9
+                              ,blue < 2.625 & blue >= 2.375 ~ 10
+                              ,blue < 2.875 & blue >= 2.625 ~ 11
+                              ,blue < 3.125 & blue >= 2.875 ~ 12
+                              ,blue < 3.375 & blue >= 3.125 ~ 13
+                              ,blue < 3.625 & blue >= 3.375 ~ 14
+                              ,blue < 3.875 & blue >= 3.625 ~ 15
+                              ,blue < 4.125 & blue >= 3.875 ~ 16
+                              ,blue < 4.375 & blue >= 4.125 ~ 17
+                              ,blue < 4.625 & blue >= 4.375 ~ 18
+                              ,blue < 4.875 & blue >= 4.625 ~ 19
+                              ,blue < 5.125 & blue >= 4.875 ~ 20), 
+         teal_int = case_when(teal < 0.25 ~ 0
+                              ,teal >= 0.25 & teal < 0.75 ~ 1
+                              ,teal >= 0.75 & teal < 1.25 ~ 2
+                              ,teal >= 1.25 & teal < 1.75 ~ 3
+                              ,teal >= 1.75 & teal < 2.25 ~ 4
+                              ,teal >= 2.25 & teal < 2.75 ~ 5
+                              ,teal >= 2.75 & teal < 3.25 ~ 6
+                              ,teal >= 3.25 & teal < 3.75 ~ 7
+                              ,teal >= 3.75 & teal < 4.25 ~ 8
+                              ,teal >= 4.25 & teal < 4.75 ~ 9
+                              ,teal >= 4.75 & teal < 5.25 ~ 10
+                              ,teal >= 5.25 & teal < 5.75 ~ 11
+                              ,teal >= 5.75 & teal < 6.25 ~ 12
+                              ,teal >= 6.25 & teal < 6.75 ~ 13
+                              ,teal >= 6.75 & teal < 7.25 ~ 14
+                              ,teal >= 7.25 & teal < 7.75 ~ 15
+                              ,teal >= 7.75 & teal < 8.25 ~ 16
+                              ,teal >= 8.25 & teal < 8.75 ~ 17
+                              ,teal >= 8.75 & teal < 9.25 ~ 18
+                              ,teal >= 9.25 & teal < 9.75 ~ 19
+                              ,teal >= 9.75 & teal < 10.25 ~ 20),
+         green_int = case_when(green < 0.167 ~ 0
+                               ,green >= 0.167 & green < 0.5 ~ 1
+                               ,green >= 0.5 & green < 0.833 ~ 2
+                               ,green >= 0.833 & green < 1.167 ~ 3
+                               ,green >= 1.167 & green < 1.5 ~ 4
+                               ,green >= 1.5 & green < 1.833 ~ 5
+                               ,green >= 1.833 & green < 2.167 ~ 6
+                               ,green >= 2.167 & green < 2.5 ~ 7
+                               ,green >= 2.5 & green < 2.833 ~ 8
+                               ,green >= 2.833 & green < 3.167 ~ 9
+                               ,green >= 3.167 & green < 3.5 ~ 10
+                               ,green >= 3.5 & green < 3.833 ~ 11
+                               ,green >= 3.833 & green < 4.167 ~ 12
+                               ,green >= 4.167 & green < 4.5 ~ 13
+                               ,green >= 4.5 & green < 4.833 ~ 14
+                               ,green >= 4.833 & green < 5.167 ~ 15
+                               ,green >= 5.167 & green < 5.5 ~ 16
+                               ,green >= 5.5 & green < 5.833 ~ 17
+                               ,green >= 5.833 & green < 6.167 ~ 18
+                               ,green >= 6.167 & green < 6.5 ~ 19
+                               ,green >= 6.5 & green < 6.833 ~ 20),
+         red_int = case_when(red < 0.125 ~ 0
+                             ,red < 0.375 & red >= 0.125 ~ 1
+                             ,red < 0.625 & red >= 0.375 ~ 2
+                             ,red < 0.875 & red >= 0.625 ~ 3
+                             ,red < 1.125 & red >= 0.875 ~ 4
+                             ,red < 1.375 & red >= 1.125 ~ 5
+                             ,red < 1.625 & red >= 1.375 ~ 6
+                             ,red < 1.875 & red >= 1.625 ~ 7
+                             ,red < 2.125 & red >= 1.875 ~ 8
+                             ,red < 2.375 & red >= 2.125 ~ 9
+                             ,red < 2.625 & red >= 2.375 ~ 10
+                             ,red < 2.875 & red >= 2.625 ~ 11
+                             ,red < 3.125 & red >= 2.875 ~ 12
+                             ,red < 3.375 & red >= 3.125 ~ 13
+                             ,red < 3.625 & red >= 3.375 ~ 14
+                             ,red < 3.875 & red >= 3.625 ~ 15
+                             ,red < 4.125 & red >= 3.875 ~ 16
+                             ,red < 4.375 & red >= 4.125 ~ 17
+                             ,red < 4.625 & red >= 4.375 ~ 18
+                             ,red < 4.875 & red >= 4.625 ~ 19
+                             ,red < 5.125 & red >= 4.875 ~ 20),
+         yellow_int = case_when(yellow < 0.25 ~ 0
+                                ,yellow >= 0.25 & yellow < 0.75 ~ 1
+                                ,yellow >= 0.75 & yellow < 1.25 ~ 2
+                                ,yellow >= 1.25 & yellow < 1.75 ~ 3
+                                ,yellow >= 1.75 & yellow < 2.25 ~ 4
+                                ,yellow >= 2.25 & yellow < 2.75 ~ 5
+                                ,yellow >= 2.75 & yellow < 3.25 ~ 6
+                                ,yellow >= 3.25 & yellow < 3.75 ~ 7
+                                ,yellow >= 3.75 & yellow < 4.25 ~ 8
+                                ,yellow >= 4.25 & yellow < 4.75 ~ 9
+                                ,yellow >= 4.75 & yellow < 5.25 ~ 10
+                                ,yellow >= 5.25 & yellow < 5.75 ~ 11
+                                ,yellow >= 5.75 & yellow < 6.25 ~ 12
+                                ,yellow >= 6.25 & yellow < 6.75 ~ 13
+                                ,yellow >= 6.75 & yellow < 7.25 ~ 14
+                                ,yellow >= 7.25 & yellow < 7.75 ~ 15
+                                ,yellow >= 7.75 & yellow < 8.25 ~ 16
+                                ,yellow >= 8.25 & yellow < 8.75 ~ 17
+                                ,yellow >= 8.75 & yellow < 9.25 ~ 18
+                                ,yellow >= 9.25 & yellow < 9.75 ~ 19
+                                ,yellow >= 9.75 & yellow < 10.25 ~ 20),
+         grey_int = case_when(grey < 0.25 ~ 0
+                              ,grey >= 0.25 & grey < 0.75 ~ 1
+                              ,grey >= 0.75 & grey < 1.25 ~ 2
+                              ,grey >= 1.25 & grey < 1.75 ~ 3
+                              ,grey >= 1.75 & grey < 2.25 ~ 4
+                              ,grey >= 2.25 & grey < 2.75 ~ 5
+                              ,grey >= 2.75 & grey < 3.25 ~ 6
+                              ,grey >= 3.25 & grey < 3.75 ~ 7
+                              ,grey >= 3.75 & grey < 4.25 ~ 8
+                              ,grey >= 4.25 & grey < 4.75 ~ 9
+                              ,grey >= 4.75 & grey < 5.25 ~ 10
+                              ,grey >= 5.25 & grey < 5.75 ~ 11
+                              ,grey >= 5.75 & grey < 6.25 ~ 12
+                              ,grey >= 6.25 & grey < 6.75 ~ 13
+                              ,grey >= 6.75 & grey < 7.25 ~ 14
+                              ,grey >= 7.25 & grey < 7.75 ~ 15
+                              ,grey >= 7.75 & grey < 8.25 ~ 16
+                              ,grey >= 8.25 & grey < 8.75 ~ 17
+                              ,grey >= 8.75 & grey < 9.25 ~ 18
+                              ,grey >= 9.25 & grey < 9.75 ~ 19
+                              ,grey >= 9.75 & grey < 10.25 ~ 20),
+         P4_int = case_when(P4 < 0.25 ~ 0
+                            ,P4 >= 0.25 & P4 < 0.75 ~ 1
+                            ,P4 >= 0.75 & P4 < 1.25 ~ 2
+                            ,P4 >= 1.25 & P4 < 1.75 ~ 3
+                            ,P4 >= 1.75 & P4 < 2.25 ~ 4
+                            ,P4 >= 2.25 & P4 < 2.75 ~ 5
+                            ,P4 >= 2.75 & P4 < 3.25 ~ 6
+                            ,P4 >= 3.25 & P4 < 3.75 ~ 7
+                            ,P4 >= 3.75 & P4 < 4.25 ~ 8
+                            ,P4 >= 4.25 & P4 < 4.75 ~ 9
+                            ,P4 >= 4.75 & P4 < 5.25 ~ 10
+                            ,P4 >= 5.25 & P4 < 5.75 ~ 11
+                            ,P4 >= 5.75 & P4 < 6.25 ~ 12
+                            ,P4 >= 6.25 & P4 < 6.75 ~ 13
+                            ,P4 >= 6.75 & P4 < 7.25 ~ 14
+                            ,P4 >= 7.25 & P4 < 7.75 ~ 15
+                            ,P4 >= 7.75 & P4 < 8.25 ~ 16
+                            ,P4 >= 8.25 & P4 < 8.75 ~ 17
+                            ,P4 >= 8.75 & P4 < 9.25 ~ 18
+                            ,P4 >= 9.25 & P4 < 9.75 ~ 19
+                            ,P4 >= 9.75 & P4 < 10.25 ~ 20),
+         P5_int = case_when(P5 < 0.25 ~ 0
+                            ,P5 >= 0.25 & P5 < 0.75 ~ 1
+                            ,P5 >= 0.75 & P5 < 1.25 ~ 2
+                            ,P5 >= 1.25 & P5 < 1.75 ~ 3
+                            ,P5 >= 1.75 & P5 < 2.25 ~ 4
+                            ,P5 >= 2.25 & P5 < 2.75 ~ 5
+                            ,P5 >= 2.75 & P5 < 3.25 ~ 6
+                            ,P5 >= 3.25 & P5 < 3.75 ~ 7
+                            ,P5 >= 3.75 & P5 < 4.25 ~ 8
+                            ,P5 >= 4.25 & P5 < 4.75 ~ 9
+                            ,P5 >= 4.75 & P5 < 5.25 ~ 10
+                            ,P5 >= 5.25 & P5 < 5.75 ~ 11
+                            ,P5 >= 5.75 & P5 < 6.25 ~ 12
+                            ,P5 >= 6.25 & P5 < 6.75 ~ 13
+                            ,P5 >= 6.75 & P5 < 7.25 ~ 14
+                            ,P5 >= 7.25 & P5 < 7.75 ~ 15
+                            ,P5 >= 7.75 & P5 < 8.25 ~ 16
+                            ,P5 >= 8.25 & P5 < 8.75 ~ 17
+                            ,P5 >= 8.75 & P5 < 9.25 ~ 18
+                            ,P5 >= 9.25 & P5 < 9.75 ~ 19
+                            ,P5 >= 9.75 & P5 < 10.25 ~ 20),
+         P6_int = case_when(P6 < 0.25 ~ 0
+                            ,P6 >= 0.25 & P6 < 0.75 ~ 1
+                            ,P6 >= 0.75 & P6 < 1.25 ~ 2
+                            ,P6 >= 1.25 & P6 < 1.75 ~ 3
+                            ,P6 >= 1.75 & P6 < 2.25 ~ 4
+                            ,P6 >= 2.25 & P6 < 2.75 ~ 5
+                            ,P6 >= 2.75 & P6 < 3.25 ~ 6
+                            ,P6 >= 3.25 & P6 < 3.75 ~ 7
+                            ,P6 >= 3.75 & P6 < 4.25 ~ 8
+                            ,P6 >= 4.25 & P6 < 4.75 ~ 9
+                            ,P6 >= 4.75 & P6 < 5.25 ~ 10
+                            ,P6 >= 5.25 & P6 < 5.75 ~ 11
+                            ,P6 >= 5.75 & P6 < 6.25 ~ 12
+                            ,P6 >= 6.25 & P6 < 6.75 ~ 13
+                            ,P6 >= 6.75 & P6 < 7.25 ~ 14
+                            ,P6 >= 7.25 & P6 < 7.75 ~ 15
+                            ,P6 >= 7.75 & P6 < 8.25 ~ 16
+                            ,P6 >= 8.25 & P6 < 8.75 ~ 17
+                            ,P6 >= 8.75 & P6 < 9.25 ~ 18
+                            ,P6 >= 9.25 & P6 < 9.75 ~ 19
+                            ,P6 >= 9.75 & P6 < 10.25 ~ 20),
+         P7_int = case_when(P7 < 0.25 ~ 0
+                            ,P7 >= 0.25 & P7 < 0.75 ~ 1
+                            ,P7 >= 0.75 & P7 < 1.25 ~ 2
+                            ,P7 >= 1.25 & P7 < 1.75 ~ 3
+                            ,P7 >= 1.75 & P7 < 2.25 ~ 4
+                            ,P7 >= 2.25 & P7 < 2.75 ~ 5
+                            ,P7 >= 2.75 & P7 < 3.25 ~ 6
+                            ,P7 >= 3.25 & P7 < 3.75 ~ 7
+                            ,P7 >= 3.75 & P7 < 4.25 ~ 8
+                            ,P7 >= 4.25 & P7 < 4.75 ~ 9
+                            ,P7 >= 4.75 & P7 < 5.25 ~ 10
+                            ,P7 >= 5.25 & P7 < 5.75 ~ 11
+                            ,P7 >= 5.75 & P7 < 6.25 ~ 12
+                            ,P7 >= 6.25 & P7 < 6.75 ~ 13
+                            ,P7 >= 6.75 & P7 < 7.25 ~ 14
+                            ,P7 >= 7.25 & P7 < 7.75 ~ 15
+                            ,P7 >= 7.75 & P7 < 8.25 ~ 16
+                            ,P7 >= 8.25 & P7 < 8.75 ~ 17
+                            ,P7 >= 8.75 & P7 < 9.25 ~ 18
+                            ,P7 >= 9.25 & P7 < 9.75 ~ 19
+                            ,P7 >= 9.75 & P7 < 10.25 ~ 20),
+         P8_int = case_when(P8 < 0.25 ~ 0
+                            ,P8 >= 0.25 & P8 < 0.75 ~ 1
+                            ,P8 >= 0.75 & P8 < 1.25 ~ 2
+                            ,P8 >= 1.25 & P8 < 1.75 ~ 3
+                            ,P8 >= 1.75 & P8 < 2.25 ~ 4
+                            ,P8 >= 2.25 & P8 < 2.75 ~ 5
+                            ,P8 >= 2.75 & P8 < 3.25 ~ 6
+                            ,P8 >= 3.25 & P8 < 3.75 ~ 7
+                            ,P8 >= 3.75 & P8 < 4.25 ~ 8
+                            ,P8 >= 4.25 & P8 < 4.75 ~ 9
+                            ,P8 >= 4.75 & P8 < 5.25 ~ 10
+                            ,P8 >= 5.25 & P8 < 5.75 ~ 11
+                            ,P8 >= 5.75 & P8 < 6.25 ~ 12
+                            ,P8 >= 6.25 & P8 < 6.75 ~ 13
+                            ,P8 >= 6.75 & P8 < 7.25 ~ 14
+                            ,P8 >= 7.25 & P8 < 7.75 ~ 15
+                            ,P8 >= 7.75 & P8 < 8.25 ~ 16
+                            ,P8 >= 8.25 & P8 < 8.75 ~ 17
+                            ,P8 >= 8.75 & P8 < 9.25 ~ 18
+                            ,P8 >= 9.25 & P8 < 9.75 ~ 19
+                            ,P8 >= 9.75 & P8 < 10.25 ~ 20))
+
+data_tot <- data_tot%>%select(-blue,-yellow,-red,-green,-grey,-teal,-P4,-P5,-P6,-P7,-P8)
+
+colnames(data_tot) <- c("blue","teal","green","red","yellow","grey","P4","P5","P6","P7","P8")
+
+#create the copy number calls file
+write.table(data_tot, file = "Copy_number_calls.txt", quote=F,sep="\t",col.names = NA)
+
+
+##### EMA plots #####
+
+cat("\nMaking EMA plots...\n")
+
+library(TTR)
+
+
+# calculate EMA with sliding windows of 10000 bp  
+EMA_AZFc <- data.frame(apply(df_amplicon,2,EMA,n=10000))  
+
+# create normalized depth value plot for each sample
+for(i in list) {
+  mean_norm <- mean(df_norm_reg[[i]])
+  ratio <- as.data.frame(EMA_AZFc[[i]]/mean_norm)
+  ratio <- cbind(df_amplicon[,1],ratio)
+  colnames(ratio) <- c("pos","ratio")
+  df6<-ratio[c(463235:548379),]
+  df7<-ratio[c(548380:634906),]
+  df8<-ratio[c(634907:721200),]
+  df9<-ratio[c(721201:806663),]
+  df10<-ratio[c(806664:870688),]
+  df11<-ratio[c(870689:896236),]
+  df12<-ratio[c(896237:921981),]
+  df13<-ratio[c(921982:981676),]
+  df14<-ratio[c(981677:1067303),]
+  df15<-ratio[c(1067304:1305263),]
+  df16<-ratio[c(1305264:1368098),]
+  df17<-ratio[c(1368099:1393732),]
+  df18<-ratio[c(1393733:1419246),]
+  df19<-ratio[c(1419247:1483905),]
+  df20<-ratio[c(1483906:1722297),]
+  df21<-ratio[c(1722298:1807969),]
+  df22<-ratio[c(1807970:1867360),]
+  p <- ggplot(df6, aes(x=pos,y=ratio))+
+    geom_line(data=df6,colour="blue")+
+    geom_line(data=df7,colour="aquamarine")+
+    geom_line(data=df8,colour="aquamarine")+
+    geom_line(data=df9,colour="blue")+
+    geom_line(data=df10,colour="green")+
+    geom_line(data=df11,colour="red")+
+    geom_line(data=df12,colour="red")+
+    geom_line(data=df13,colour="gray")+
+    geom_line(data=df14,colour="blue")+
+    geom_line(data=df15,colour="yellow")+
+    geom_line(data=df16,colour="green")+
+    geom_line(data=df17,colour="red")+
+    geom_line(data=df18,colour="red")+
+    geom_line(data=df19,colour="green")+
+    geom_line(data=df20,colour="yellow")+
+    geom_line(data=df21,colour="blue")+
+    geom_line(data=df22,colour="gray")+
+    #if there are too many amplicon copies change the following limits, otherwise the plot cannot be seen
+    scale_y_continuous(limits = c(0,2.5))+
+    scale_x_continuous(labels = function(x) format(x, scientific = FALSE))+
+    labs(y= "Normalized depth value", x = "Position")+
+    ggtitle(paste0(i))+
+    theme(axis.text=element_text(size=20),
+          axis.title=element_text(size=20))
+  ggsave(paste(i,"_AZFc.png",sep=""), width = 11, height=5)}
+
+
+commC = paste0("rm ",pywd,"/amplicon_depth.txt")
+system(commC, ignore.stderr=T)
+
+commD = paste0("rm ",pywd,"/Norm_depth.txt")
+system(commD, ignore.stderr=T)
+
+
+cat("\nAll done!\n")
+
+
